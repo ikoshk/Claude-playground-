@@ -20,6 +20,7 @@ help:
 
 ## Start in demo mode (stub search + demo LLM, no API keys needed)
 demo:
+	@if [ ! -f .env ]; then cp .env.example .env; fi
 	@echo "Starting in DEMO mode (stub search + demo LLM)..."
 	SEARCH_PROVIDER=stub LLM_MODE=demo $(DC) up --build
 

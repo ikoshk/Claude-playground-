@@ -236,11 +236,11 @@ def generate_key_takeaways_visual(
                 alpha=0.75,
             )
 
-        # Separator line
+        # Separator line (use plot with transform for axes-fraction coordinates)
         if i < n - 1:
-            ax.axhline(
-                y=y_pos - item_height * 0.45,
-                xmin=0.02, xmax=0.98,
+            line_y = y_pos - item_height * 0.45
+            ax.plot(
+                [0.02, 0.98], [line_y, line_y],
                 color=TEXT_COLOR, alpha=0.1, linewidth=0.5,
                 transform=ax.transAxes,
             )
