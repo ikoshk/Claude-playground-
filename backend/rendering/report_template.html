@@ -1,0 +1,541 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>IT Maturity Assessment – {{ report.company_name }}</title>
+  <style>
+    /* ── Reset & base ──────────────────────────────────────────────── */
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+    body {
+      font-family: 'Segoe UI', Arial, sans-serif;
+      background: #0f1117;
+      color: #e8e8e8;
+      line-height: 1.6;
+      font-size: 14px;
+    }
+    a { color: #4a9eff; text-decoration: none; }
+    a:hover { text-decoration: underline; }
+
+    /* ── Layout ────────────────────────────────────────────────────── */
+    .container { max-width: 1200px; margin: 0 auto; padding: 0 24px 48px; }
+
+    /* ── Cover / Header ────────────────────────────────────────────── */
+    .cover {
+      background: linear-gradient(135deg, #0f3460 0%, #16213e 50%, #0f1117 100%);
+      border-bottom: 3px solid #e94560;
+      padding: 48px 0 36px;
+      margin-bottom: 40px;
+    }
+    .cover-inner { max-width: 1200px; margin: 0 auto; padding: 0 24px; }
+    .cover-label {
+      font-size: 11px;
+      letter-spacing: 3px;
+      text-transform: uppercase;
+      color: #e94560;
+      margin-bottom: 8px;
+    }
+    .cover-title {
+      font-size: 32px;
+      font-weight: 700;
+      color: #ffffff;
+      margin-bottom: 6px;
+    }
+    .cover-subtitle { font-size: 16px; color: #a0aec0; margin-bottom: 24px; }
+    .cover-meta { display: flex; gap: 32px; flex-wrap: wrap; }
+    .cover-meta-item { font-size: 12px; color: #a0aec0; }
+    .cover-meta-item span { color: #e8e8e8; font-weight: 600; }
+
+    /* ── Overall score banner ────────────────────────────────────────── */
+    .score-banner {
+      display: flex;
+      align-items: center;
+      gap: 32px;
+      background: #16213e;
+      border: 1px solid #0f3460;
+      border-radius: 12px;
+      padding: 24px 32px;
+      margin-bottom: 40px;
+    }
+    .score-circle {
+      width: 90px; height: 90px;
+      border-radius: 50%;
+      border: 4px solid #e94560;
+      display: flex; flex-direction: column;
+      align-items: center; justify-content: center;
+      flex-shrink: 0;
+      background: #0f3460;
+    }
+    .score-circle .num { font-size: 26px; font-weight: 700; color: #fff; }
+    .score-circle .den { font-size: 11px; color: #a0aec0; }
+    .score-info h2 { font-size: 20px; color: #fff; margin-bottom: 4px; }
+    .score-info p { color: #a0aec0; font-size: 13px; }
+    .maturity-badge {
+      display: inline-block;
+      padding: 4px 12px;
+      border-radius: 20px;
+      font-size: 12px;
+      font-weight: 700;
+      letter-spacing: 1px;
+      text-transform: uppercase;
+      margin-top: 6px;
+    }
+    .badge-initial { background: #e74c3c33; color: #e74c3c; border: 1px solid #e74c3c55; }
+    .badge-in-development { background: #f39c1233; color: #f39c12; border: 1px solid #f39c1255; }
+    .badge-industrialized { background: #2980b933; color: #2980b9; border: 1px solid #2980b955; }
+    .badge-state-of-the-art { background: #27ae6033; color: #27ae60; border: 1px solid #27ae6055; }
+
+    /* ── Maturity visual image ────────────────────────────────────────── */
+    .visual-section { margin-bottom: 40px; }
+    .visual-section img {
+      width: 100%;
+      border-radius: 10px;
+      border: 1px solid #16213e;
+    }
+
+    /* ── Section headings ──────────────────────────────────────────── */
+    .section { margin-bottom: 40px; }
+    .section-header {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      margin-bottom: 20px;
+      padding-bottom: 10px;
+      border-bottom: 2px solid #e94560;
+    }
+    .section-header h2 {
+      font-size: 18px;
+      font-weight: 700;
+      color: #fff;
+      text-transform: uppercase;
+      letter-spacing: 1px;
+    }
+    .section-letter {
+      background: #e94560;
+      color: #fff;
+      font-size: 11px;
+      font-weight: 700;
+      padding: 3px 8px;
+      border-radius: 4px;
+      letter-spacing: 1px;
+    }
+
+    /* ── Tables ─────────────────────────────────────────────────────── */
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      font-size: 13px;
+      margin-bottom: 8px;
+    }
+    th {
+      background: #16213e;
+      color: #a0aec0;
+      font-size: 11px;
+      font-weight: 600;
+      letter-spacing: 1px;
+      text-transform: uppercase;
+      padding: 10px 14px;
+      text-align: left;
+      border-bottom: 1px solid #0f3460;
+    }
+    td {
+      padding: 10px 14px;
+      border-bottom: 1px solid #1a2235;
+      vertical-align: top;
+      color: #d0d8e8;
+    }
+    tr:last-child td { border-bottom: none; }
+    tr:hover td { background: #16213e55; }
+    .table-wrapper {
+      background: #111827;
+      border: 1px solid #1e2d45;
+      border-radius: 8px;
+      overflow: hidden;
+      margin-bottom: 24px;
+    }
+
+    /* ── Maturity chips in tables ──────────────────────────────────── */
+    .chip {
+      display: inline-block;
+      padding: 3px 10px;
+      border-radius: 12px;
+      font-size: 11px;
+      font-weight: 700;
+      white-space: nowrap;
+    }
+    .chip-initial { background: #e74c3c22; color: #e74c3c; border: 1px solid #e74c3c44; }
+    .chip-in-development { background: #f39c1222; color: #f39c12; border: 1px solid #f39c1244; }
+    .chip-industrialized { background: #2980b922; color: #4a9eff; border: 1px solid #2980b944; }
+    .chip-state-of-the-art { background: #27ae6022; color: #2ecc71; border: 1px solid #27ae6044; }
+
+    /* ── Dimension cards ──────────────────────────────────────────── */
+    .dim-card {
+      background: #111827;
+      border: 1px solid #1e2d45;
+      border-radius: 10px;
+      overflow: hidden;
+      margin-bottom: 28px;
+    }
+    .dim-card-header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 14px 20px;
+      background: #16213e;
+      border-bottom: 1px solid #1e2d45;
+    }
+    .dim-card-title { font-size: 15px; font-weight: 700; color: #fff; }
+    .dim-card-meta { display: flex; gap: 16px; align-items: center; }
+    .conf-badge {
+      font-size: 10px;
+      color: #a0aec0;
+      border: 1px solid #334155;
+      padding: 2px 8px;
+      border-radius: 10px;
+    }
+    .dim-card-body { padding: 16px 20px; }
+
+    /* ── Takeaways image ─────────────────────────────────────────── */
+    .takeaways-img-wrapper img {
+      width: 100%;
+      border-radius: 10px;
+      border: 1px solid #16213e;
+      margin-bottom: 20px;
+    }
+
+    /* ── Citations in detail rows ────────────────────────────────── */
+    .cite-list { list-style: none; padding: 0; margin: 0; }
+    .cite-list li {
+      font-size: 11px;
+      color: #4a9eff;
+      margin-bottom: 3px;
+      word-break: break-all;
+    }
+    .cite-date { color: #a0aec0; margin-left: 4px; }
+
+    /* ── Gap notice ──────────────────────────────────────────────── */
+    .gap-notice {
+      font-size: 11px;
+      color: #f39c12;
+      font-style: italic;
+    }
+
+    /* ── Downgrade notice ────────────────────────────────────────── */
+    .downgrade-notice {
+      font-size: 11px;
+      color: #e74c3c;
+      font-style: italic;
+    }
+
+    /* ── Footer ─────────────────────────────────────────────────── */
+    .report-footer {
+      border-top: 1px solid #1e2d45;
+      padding: 24px 0;
+      text-align: center;
+      font-size: 11px;
+      color: #4a5568;
+      margin-top: 40px;
+    }
+
+    /* ── Validator notice ────────────────────────────────────────── */
+    .validator-pass {
+      background: #27ae6022;
+      border: 1px solid #27ae6044;
+      color: #2ecc71;
+      border-radius: 6px;
+      padding: 8px 16px;
+      font-size: 12px;
+      margin-bottom: 24px;
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+    }
+    .validator-fail {
+      background: #e74c3c22;
+      border: 1px solid #e74c3c44;
+      color: #e74c3c;
+      border-radius: 6px;
+      padding: 8px 16px;
+      font-size: 12px;
+      margin-bottom: 24px;
+    }
+
+    /* Print styles */
+    @media print {
+      body { background: #fff; color: #000; }
+      .cover { background: #0f3460; }
+      table, .dim-card { page-break-inside: avoid; }
+    }
+  </style>
+</head>
+<body>
+
+<!-- ══ COVER ════════════════════════════════════════════════════════════════ -->
+<div class="cover">
+  <div class="cover-inner">
+    <div class="cover-label">IT Maturity Assessment Report</div>
+    <div class="cover-title">{{ report.company_name }}</div>
+    <div class="cover-subtitle">6-Dimension IT Maturity Framework – Executive Report</div>
+    <div class="cover-meta">
+      <div class="cover-meta-item">Generated: <span>{{ report.generated_at.strftime('%B %d, %Y') }}</span></div>
+      {% if report.country %}<div class="cover-meta-item">Country: <span>{{ report.country }}</span></div>{% endif %}
+      {% if report.company_domain %}<div class="cover-meta-item">Domain: <span>{{ report.company_domain }}</span></div>{% endif %}
+      <div class="cover-meta-item">Sources collected: <span>{{ report.sources_collected }}</span></div>
+      <div class="cover-meta-item">In-window sources (2023–2025): <span>{{ report.sources_in_window }}</span></div>
+    </div>
+  </div>
+</div>
+
+<div class="container">
+
+  <!-- Validator status -->
+  {% if report.validator_passed %}
+  <div class="validator-pass">✔ All report constraints validated successfully.</div>
+  {% else %}
+  <div class="validator-fail">⚠ Validator: Some constraints could not be fully verified. Review individual sections below.</div>
+  {% endif %}
+
+  <!-- ══ OVERALL SCORE BANNER ═══════════════════════════════════════════════ -->
+  <div class="score-banner">
+    <div class="score-circle">
+      <div class="num">{{ "%.1f"|format(report.overall_maturity_numeric) }}</div>
+      <div class="den">/ 4.0</div>
+    </div>
+    <div class="score-info">
+      <h2>Overall IT Maturity</h2>
+      <div class="maturity-badge badge-{{ report.overall_maturity.value | lower | replace(' ', '-') }}">
+        {{ report.overall_maturity.value }}
+      </div>
+      <p style="margin-top:8px;">Based on {{ report.dimensions|length }} dimensions, {{ report.sources_in_window }} in-window public sources (2023–2025).</p>
+    </div>
+  </div>
+
+  <!-- ══ A: MATURITY VISUAL ═════════════════════════════════════════════════ -->
+  <div class="section visual-section">
+    <div class="section-header">
+      <span class="section-letter">A</span>
+      <h2>Maturity by Dimension</h2>
+    </div>
+    {% if maturity_visual_path %}
+    <img src="{{ maturity_visual_path }}" alt="Maturity Visual – {{ report.company_name }}" />
+    {% else %}
+    <p style="color:#a0aec0;">Maturity visual not available.</p>
+    {% endif %}
+  </div>
+
+  <!-- ══ B: KEY TAKEAWAYS IMAGE ═════════════════════════════════════════════ -->
+  <div class="section">
+    <div class="section-header">
+      <span class="section-letter">B</span>
+      <h2>Key Takeaways</h2>
+    </div>
+    <div class="takeaways-img-wrapper">
+      {% if key_takeaways_path %}
+      <img src="{{ key_takeaways_path }}" alt="Key Takeaways – {{ report.company_name }}" />
+      {% endif %}
+    </div>
+    <!-- Textual fallback for accessibility -->
+    <div class="table-wrapper">
+      <table>
+        <thead>
+          <tr>
+            <th>#</th>
+            <th>Action</th>
+            <th>Justification</th>
+            <th>Source</th>
+          </tr>
+        </thead>
+        <tbody>
+          {% for ta in report.key_takeaways %}
+          <tr>
+            <td>{{ loop.index }}</td>
+            <td><strong>{{ ta.title }}</strong></td>
+            <td>{{ ta.justification }}</td>
+            <td>
+              <ul class="cite-list">
+                {% for c in ta.citations %}
+                <li>
+                  <a href="{{ c.url }}" target="_blank" rel="noopener">{{ (c.url or '')[:60] }}{% if (c.url or '')|length > 60 %}…{% endif %}</a>
+                  {% if c.published_date %}<span class="cite-date">({{ c.published_date }})</span>{% endif %}
+                </li>
+                {% endfor %}
+              </ul>
+            </td>
+          </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+  </div>
+
+  <!-- ══ C: SYNTHETIC SUMMARY TABLE ════════════════════════════════════════ -->
+  <div class="section">
+    <div class="section-header">
+      <span class="section-letter">C</span>
+      <h2>Executive Summary by Dimension</h2>
+    </div>
+    <div class="table-wrapper">
+      <table>
+        <thead>
+          <tr>
+            <th>Dimension</th>
+            <th>Maturity Score</th>
+            <th>Score</th>
+            <th>Confidence</th>
+            <th>Key Strengths &amp; Gaps · Recommendations</th>
+          </tr>
+        </thead>
+        <tbody>
+          {% for dim in report.dimensions %}
+          <tr>
+            <td><strong>{{ dim.dimension_name }}</strong></td>
+            <td>
+              <span class="chip chip-{{ dim.maturity.value | lower | replace(' ', '-') }}">
+                {{ dim.maturity.value }}
+              </span>
+            </td>
+            <td>{{ "%.1f"|format(dim.maturity_numeric) }} / 4</td>
+            <td>{{ dim.confidence.value }}</td>
+            <td>{{ dim.summary_cell }}</td>
+          </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+  </div>
+
+  <!-- ══ D: DETAILED TABLES PER DIMENSION ══════════════════════════════════ -->
+  <div class="section">
+    <div class="section-header">
+      <span class="section-letter">D</span>
+      <h2>Detailed Assessment by Dimension</h2>
+    </div>
+
+    {% for dim in report.dimensions %}
+    <div class="dim-card">
+      <div class="dim-card-header">
+        <div class="dim-card-title">{{ dim.dimension_id }} – {{ dim.dimension_name }}</div>
+        <div class="dim-card-meta">
+          <span class="chip chip-{{ dim.maturity.value | lower | replace(' ', '-') }}">
+            {{ dim.maturity.value }}
+          </span>
+          <span class="conf-badge">{{ dim.confidence.value }} Confidence</span>
+          <span style="font-size:13px; color:#a0aec0;">{{ "%.1f"|format(dim.maturity_numeric) }} / 4.0</span>
+        </div>
+      </div>
+      <div class="dim-card-body">
+        <div class="table-wrapper" style="margin-bottom:0;">
+          <table>
+            <thead>
+              <tr>
+                <th style="width:6%;">ID</th>
+                <th style="width:18%;">Sub-Dimension</th>
+                <th style="width:12%;">Maturity</th>
+                <th style="width:34%;">Question &amp; Justification</th>
+                <th style="width:30%;">Sources &amp; Dates</th>
+              </tr>
+            </thead>
+            <tbody>
+              {% for q in dim.questions %}
+              <tr>
+                <td><strong>{{ q.question_id }}</strong></td>
+                <td>{{ q.sub_dimension }}</td>
+                <td>
+                  <span class="chip chip-{{ q.final_maturity.value | lower | replace(' ', '-') }}">
+                    {{ q.final_maturity.value }}
+                  </span>
+                  {% if q.downgraded %}
+                  <div class="downgrade-notice">↓ Downgraded</div>
+                  {% endif %}
+                </td>
+                <td>
+                  <em style="font-size:11px; color:#718096;">{{ q.question_text }}</em>
+                  <div style="margin-top:6px;">{{ q.justification }}</div>
+                  {% if q.data_gap %}
+                  <div class="gap-notice">⚠ Insufficient public data</div>
+                  {% endif %}
+                  {% if q.extracted_signals %}
+                  <div style="margin-top:6px; font-size:11px; color:#718096;">
+                    Signals: {{ q.extracted_signals | join(', ') }}
+                  </div>
+                  {% endif %}
+                </td>
+                <td>
+                  {% if q.citations %}
+                  <ul class="cite-list">
+                    {% for c in q.citations %}
+                    <li>
+                      <a href="{{ c.url }}" target="_blank" rel="noopener">
+                        {{ (c.title or c.url or '')[:55] }}{% if ((c.title or c.url or ''))|length > 55 %}…{% endif %}
+                      </a>
+                      {% if c.published_date %}<span class="cite-date">({{ c.published_date }})</span>{% endif %}
+                      {% if c.is_primary %}<span style="font-size:10px; color:#27ae60;"> [Primary]</span>{% endif %}
+                    </li>
+                    {% endfor %}
+                  </ul>
+                  {% else %}
+                  <span class="gap-notice">No in-window sources</span>
+                  {% endif %}
+                </td>
+              </tr>
+              {% endfor %}
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+    {% endfor %}
+  </div>
+
+  <!-- ══ E: BIBLIOGRAPHY ════════════════════════════════════════════════════ -->
+  <div class="section">
+    <div class="section-header">
+      <span class="section-letter">E</span>
+      <h2>Bibliography</h2>
+    </div>
+    <div class="table-wrapper">
+      <table>
+        <thead>
+          <tr>
+            <th>#</th>
+            <th>Source Title</th>
+            <th>Publisher</th>
+            <th>Published Date</th>
+            <th>URL</th>
+          </tr>
+        </thead>
+        <tbody>
+          {% for c in report.bibliography %}
+          <tr>
+            <td>{{ loop.index }}</td>
+            <td>{{ c.title or '—' }}</td>
+            <td>{{ c.publisher or '—' }}</td>
+            <td>{{ c.published_date or '—' }}</td>
+            <td style="word-break:break-all; font-size:11px;">
+              <a href="{{ c.url }}" target="_blank" rel="noopener">{{ c.url or '—' }}</a>
+            </td>
+          </tr>
+          {% endfor %}
+          {% if not report.bibliography %}
+          <tr><td colspan="5" style="color:#718096; text-align:center;">No bibliography entries.</td></tr>
+          {% endif %}
+        </tbody>
+      </table>
+    </div>
+  </div>
+
+</div><!-- /.container -->
+
+<!-- ══ FOOTER ════════════════════════════════════════════════════════════════ -->
+<div class="report-footer">
+  <div class="container">
+    IT Maturity Assessment MVP &nbsp;|&nbsp;
+    Report generated {{ report.generated_at.strftime('%Y-%m-%d %H:%M UTC') }} &nbsp;|&nbsp;
+    Assessment window: 2023–2025 &nbsp;|&nbsp;
+    Sources: publicly available data only &nbsp;|&nbsp;
+    Run ID: {{ report.run_id }}
+  </div>
+</div>
+
+</body>
+</html>
