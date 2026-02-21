@@ -362,7 +362,7 @@ async def run_pipeline(
             report_pdf_path=str(pdf_path) if pdf_path else None,
             maturity_visual_path=str(maturity_visual_path),
             key_takeaways_path=str(key_takeaways_path),
-            report_json=report.dict(),
+            report_json=report.model_dump(mode="json"),
         )
 
         _status(RunStatus.COMPLETE, "Assessment complete.")

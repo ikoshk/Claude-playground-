@@ -319,7 +319,7 @@ def generate_key_takeaways(dimension_results: List[DimensionResult]) -> List[Dic
             {
                 "title": title,
                 "justification": just,
-                "citations": [c.dict() for c in citations[:2]],
+                "citations": [c.model_dump() for c in citations[:2]],
             }
         )
 
@@ -336,7 +336,7 @@ def generate_key_takeaways(dimension_results: List[DimensionResult]) -> List[Dic
                     {
                         "title": f"Advance {q.sub_dimension} to next maturity level",
                         "justification": f"{q.sub_dimension} is at {q.final_maturity.value}; further advancement recommended.",
-                        "citations": [c.dict() for c in citations],
+                        "citations": [c.model_dump() for c in citations],
                     }
                 )
 

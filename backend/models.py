@@ -11,11 +11,30 @@ from typing import Any, Dict, List, Optional
 from pydantic import BaseModel, Field, HttpUrl
 from sqlalchemy import (
     Column, String, Text, Integer, Float, Boolean,
-    DateTime, Enum as SAEnum, JSON, ForeignKey
+    DateTime, Enum as SAEnum, JSON, ForeignKey, TypeDecorator
 )
-from sqlalchemy.dialects.postgresql import UUID as PGUUID
 from sqlalchemy.ext.declarative import declarative_base
 from sqlalchemy.orm import relationship
+
+
+# Portable UUID column: stores as String(36) for SQLite compatibility
+class UUIDType(TypeDecorator):
+    impl = String(36)
+    cache_ok = True
+
+    def process_bind_param(self, value, dialect):
+        if value is None:
+            return None
+        return str(value)
+
+    def process_result_value(self, value, dialect):
+        if value is None:
+            return None
+        import uuid as _uuid
+        try:
+            return _uuid.UUID(str(value))
+        except ValueError:
+            return value
 
 Base = declarative_base()
 
@@ -58,11 +77,11 @@ class ConfidenceLevel(str, enum.Enum):
 class AssessmentRun(Base):
     __tablename__ = "assessment_runs"
 
-    id = Column(PGUUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
+    id = Column(UUIDType(), primary_key=True, default=uuid.uuid4)
     company_name = Column(String(255), nullable=False)
     company_domain = Column(String(255), nullable=True)
     country = Column(String(100), nullable=True)
-    status = Column(SAEnum(RunStatus), default=RunStatus.PENDING, nullable=False)
+    status = Column(SAEnum(RunStatus, native_enum=False), default=RunStatus.PENDING, nullable=False)
     created_at = Column(DateTime, default=datetime.utcnow)
     updated_at = Column(DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
     completed_at = Column(DateTime, nullable=True)
@@ -84,8 +103,8 @@ class AssessmentRun(Base):
 class EvidenceSource(Base):
     __tablename__ = "evidence_sources"
 
-    id = Column(PGUUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
-    run_id = Column(PGUUID(as_uuid=True), ForeignKey("assessment_runs.id"), nullable=False)
+    id = Column(UUIDType(), primary_key=True, default=uuid.uuid4)
+    run_id = Column(UUIDType(), ForeignKey("assessment_runs.id"), nullable=False)
     url = Column(Text, nullable=False)
     title = Column(Text, nullable=True)
     publisher = Column(Text, nullable=True)

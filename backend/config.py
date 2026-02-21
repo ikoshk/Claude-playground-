@@ -19,8 +19,8 @@ class Settings(BaseSettings):
     ALLOWED_ORIGINS: str = "*"
 
     # ── Database ─────────────────────────────────────────────────────────────
-    DATABASE_URL: str = "postgresql+asyncpg://postgres:postgres@localhost:5432/itmaturity"
-    DATABASE_URL_SYNC: str = "postgresql://postgres:postgres@localhost:5432/itmaturity"
+    DATABASE_URL: str = "sqlite+aiosqlite:///./itmaturity.db"
+    DATABASE_URL_SYNC: str = "sqlite:///./itmaturity.db"
 
     # ── Redis / Celery ────────────────────────────────────────────────────────
     REDIS_URL: str = "redis://localhost:6379/0"
@@ -59,7 +59,7 @@ class Settings(BaseSettings):
     EVIDENCE_WINDOW_END: int = 2025
 
     # ── Filesystem ────────────────────────────────────────────────────────────
-    ARTIFACTS_DIR: Path = Path("/artifacts")
+    ARTIFACTS_DIR: Path = Path("./artifacts")
 
     # ── Playwright ────────────────────────────────────────────────────────────
     USE_PLAYWRIGHT: bool = True

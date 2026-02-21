@@ -39,7 +39,7 @@ def save_report_json(run_id: str, report: ReportData) -> Path:
     """Save the full ReportData as JSON."""
     d = run_artifacts_dir(run_id)
     path = d / "report.json"
-    path.write_text(report.json(indent=2), encoding="utf-8")
+    path.write_text(report.model_dump_json(indent=2), encoding="utf-8")
     return path
 
 
@@ -50,7 +50,7 @@ def load_report_json(run_id: str) -> Optional[ReportData]:
     if not path.exists():
         return None
     try:
-        return ReportData.parse_raw(path.read_text(encoding="utf-8"))
+        return ReportData.model_validate_json(path.read_text(encoding="utf-8"))
     except Exception as exc:
         logger.error("Failed to load report JSON for run %s: %s", run_id, exc)
         return None

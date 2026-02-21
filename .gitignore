@@ -20,6 +20,11 @@ build/
 venv/
 env/
 
+# SQLite database files
+*.db
+*.db-shm
+*.db-wal
+
 # Test / coverage
 .pytest_cache/
 .coverage

@@ -17,7 +17,7 @@ from collections import defaultdict
 from pathlib import Path
 from typing import Any, Dict, List, Optional
 
-from fastapi import FastAPI, HTTPException, Request, Depends
+from fastapi import BackgroundTasks, FastAPI, HTTPException, Request, Depends
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import FileResponse, HTMLResponse, JSONResponse
 from fastapi.staticfiles import StaticFiles
@@ -135,6 +135,7 @@ async def health():
 async def create_assessment(
     request: Request,
     body: AssessmentRequest,
+    background_tasks: BackgroundTasks,
     db: AsyncSession = Depends(get_db),
 ):
     """Start a new IT Maturity Assessment run."""
@@ -169,7 +170,8 @@ async def create_assessment(
     finally:
         sync_db.close()
 
-    # Dispatch Celery task
+    # Dispatch to Celery if available, else use async background task
+    celery_dispatched = False
     try:
         from backend.tasks import run_assessment_task
         task = run_assessment_task.delay(
@@ -178,7 +180,8 @@ async def create_assessment(
             company_domain=body.company_domain,
             country=body.country,
         )
-        logger.info("Dispatched task %s for run %s", task.id, run_id)
+        logger.info("Dispatched Celery task %s for run %s", task.id, run_id)
+        celery_dispatched = True
 
         # Store task ID
         sync_db2 = SyncSessionLocal()
@@ -191,13 +194,17 @@ async def create_assessment(
             sync_db2.close()
 
     except Exception as exc:
-        logger.error("Failed to dispatch task: %s", exc)
-        # Fallback: run inline (for environments without Celery)
-        sync_db3 = SyncSessionLocal()
-        try:
-            _run_inline(run_id, body.company_name, body.company_domain, body.country, sync_db3)
-        finally:
-            sync_db3.close()
+        logger.warning("Celery unavailable (%s); using async background task", exc)
+
+    if not celery_dispatched:
+        # Fallback: run as an asyncio background task within FastAPI's event loop
+        background_tasks.add_task(
+            _run_async_background,
+            run_id,
+            body.company_name,
+            body.company_domain,
+            body.country,
+        )
 
     # Return initial status
     sync_db4 = SyncSessionLocal()
@@ -284,30 +291,29 @@ def _run_to_response(run: AssessmentRun, request: Request) -> RunStatusResponse:
     )
 
 
-def _run_inline(
+async def _run_async_background(
     run_id: str,
     company_name: str,
     company_domain: Optional[str],
     country: Optional[str],
-    db,
 ) -> None:
-    """Fallback: run pipeline inline (no Celery)."""
-    import asyncio
+    """Fallback: run pipeline as an asyncio coroutine (no Celery required)."""
     from backend.orchestrator import run_pipeline
 
-    logger.info("Running pipeline inline for run %s", run_id)
+    logger.info("Running pipeline as background task for run %s", run_id)
+    db = SyncSessionLocal()
     try:
-        asyncio.run(
-            run_pipeline(
-                run_id=run_id,
-                company_name=company_name,
-                company_domain=company_domain,
-                country=country,
-                db=db,
-            )
+        await run_pipeline(
+            run_id=run_id,
+            company_name=company_name,
+            company_domain=company_domain,
+            country=country,
+            db=db,
         )
     except Exception as exc:
-        logger.error("Inline pipeline failed: %s", exc)
+        logger.error("Background pipeline failed: %s", exc)
+    finally:
+        db.close()
 
 
 # ──────────────────────────────────────────────────────────────────────────────
