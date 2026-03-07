@@ -54,6 +54,32 @@ app.add_middleware(
 )
 
 # ──────────────────────────────────────────────────────────────────────────────
+# Redis availability check (fast, cached at startup)
+# ──────────────────────────────────────────────────────────────────────────────
+
+_redis_available: Optional[bool] = None
+
+
+def _check_redis() -> bool:
+    """Quick socket-level ping to Redis. Cached after first call."""
+    global _redis_available
+    if _redis_available is not None:
+        return _redis_available
+    import socket
+    from urllib.parse import urlparse
+    try:
+        p = urlparse(settings.REDIS_URL)
+        host = p.hostname or "localhost"
+        port = p.port or 6379
+        s = socket.create_connection((host, port), timeout=1)
+        s.close()
+        _redis_available = True
+    except Exception:
+        _redis_available = False
+    logger.info("Redis available: %s", _redis_available)
+    return _redis_available
+
+# ──────────────────────────────────────────────────────────────────────────────
 # In-memory rate limiter (per-IP)
 # ──────────────────────────────────────────────────────────────────────────────
 
@@ -170,31 +196,34 @@ async def create_assessment(
     finally:
         sync_db.close()
 
-    # Dispatch to Celery if available, else use async background task
+    # Dispatch to Celery if Redis is reachable, else use async background task
     celery_dispatched = False
-    try:
-        from backend.tasks import run_assessment_task
-        task = run_assessment_task.delay(
-            run_id=run_id,
-            company_name=body.company_name,
-            company_domain=body.company_domain,
-            country=body.country,
-        )
-        logger.info("Dispatched Celery task %s for run %s", task.id, run_id)
-        celery_dispatched = True
-
-        # Store task ID
-        sync_db2 = SyncSessionLocal()
+    if _check_redis():
         try:
-            r = sync_db2.query(AssessmentRun).filter(AssessmentRun.id == run_id).first()
-            if r:
-                r.celery_task_id = task.id
-                sync_db2.commit()
-        finally:
-            sync_db2.close()
+            from backend.tasks import run_assessment_task
+            task = run_assessment_task.delay(
+                run_id=run_id,
+                company_name=body.company_name,
+                company_domain=body.company_domain,
+                country=body.country,
+            )
+            logger.info("Dispatched Celery task %s for run %s", task.id, run_id)
+            celery_dispatched = True
 
-    except Exception as exc:
-        logger.warning("Celery unavailable (%s); using async background task", exc)
+            # Store task ID
+            sync_db2 = SyncSessionLocal()
+            try:
+                r = sync_db2.query(AssessmentRun).filter(AssessmentRun.id == run_id).first()
+                if r:
+                    r.celery_task_id = task.id
+                    sync_db2.commit()
+            finally:
+                sync_db2.close()
+
+        except Exception as exc:
+            logger.warning("Celery dispatch failed (%s); using background task", exc)
+    else:
+        logger.info("Redis not available – using background task for run %s", run_id)
 
     if not celery_dispatched:
         # Fallback: run as an asyncio background task within FastAPI's event loop
